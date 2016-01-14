@@ -1,13 +1,14 @@
 package com.addictiveads.restclient;
 
-//import android.support.v7.app.ActionBarActivity;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
+
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import android.app.Activity;
 import android.net.Uri;
@@ -44,11 +45,11 @@ public class MainActivity extends Activity {
                 String name = mYourName.getText().toString();
                 mServerResponse.setText(name);
                 String urlString = BASE_URL + name;
-                
-             // Call the class which has implemented AsyncTask with URL
-              // to access Web Service by Background thread
+
+                // Call the class which has implemented AsyncTask with URL
+                // to access Web Service by Background thread
                 new CallAddictiveAdsRestApi().execute(urlString);
-                
+
             }
         });
     }
@@ -72,9 +73,11 @@ public class MainActivity extends Activity {
         return super.onOptionsItemSelected(item);
     }
 
-    public class CallAddictiveAdsRestApi extends AsyncTask<String, Void, String> {
+    public class CallAddictiveAdsRestApi extends
+            AsyncTask<String, Void, String> {
 
-        private final String LOG_TAG = CallAddictiveAdsRestApi.class.getSimpleName();
+        private final String LOG_TAG = CallAddictiveAdsRestApi.class
+                .getSimpleName();
 
         @Override
         protected String doInBackground(String... params) {
@@ -142,8 +145,14 @@ public class MainActivity extends Activity {
                 }
             }
 
-            if (serverResponseJsonString.length() > 0) {
-                return "Got server respone. JSON data needs to be processed!!";
+            // if (serverResponseJsonString.length() > 0) {
+            // return "Got server response. JSON data needs to be processed!!";
+            // }
+            try {
+                return getMessageFromJsonString(serverResponseJsonString);
+            } catch (JSONException e) {
+                Log.e(LOG_TAG, e.getMessage(), e);
+                e.printStackTrace();
             }
 
             return null;
@@ -154,11 +163,37 @@ public class MainActivity extends Activity {
             super.onPostExecute(result);
             Log.v(LOG_TAG, "Server response Message: " + result);
             if (result != null) {
-                // Got the server response
+                // Got the required message
                 mServerResponse.setText(result.toString());
             }
 
         }
+
+        private String getMessageFromJsonString(String serverResponseJsonString)
+                throws JSONException {
+
+            // Server response:
+            // {"success":true,"data":{"message":"hello Azizur, from GET"}}
+            // Following JSON objects need to be extracted.
+
+            final String SR_SUCCESS = "success";
+            final String SR_DATA = "data";
+            final String SR_MESSAGE = "message";
+
+            JSONObject serverResponseJson = new JSONObject(
+                    serverResponseJsonString);
+            boolean success = serverResponseJson.getBoolean(SR_SUCCESS);
+            JSONObject jsonData = serverResponseJson.getJSONObject(SR_DATA);
+            String message = jsonData.getString(SR_MESSAGE);
+
+            if (success) {
+                return message;
+            } else {
+                return null;
+            }
+
+        }
+
     }
 
 }
