@@ -6,7 +6,10 @@
 
     <uses-sdk
         android:minSdkVersion="8"
-        android:targetSdkVersion="22" />
+        android:targetSdkVersion="23" />
+    
+    <!-- This permission is necessary to perform network access. -->
+     <uses-permission android:name="android.permission.INTERNET" />
 
     <application
         android:allowBackup="true"

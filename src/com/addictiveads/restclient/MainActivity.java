@@ -2,8 +2,18 @@ package com.addictiveads.restclient;
 
 //import android.support.v7.app.ActionBarActivity;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+
 import android.app.Activity;
+import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -33,8 +43,12 @@ public class MainActivity extends Activity {
             public void onClick(View v) {
                 String name = mYourName.getText().toString();
                 mServerResponse.setText(name);
-
-                // here call the class which has implemented AsyncTask with URL to access Web Service
+                String urlString = BASE_URL + name;
+                
+             // Call the class which has implemented AsyncTask with URL
+              // to access Web Service by Background thread
+                new CallAddictiveAdsRestApi().execute(urlString);
+                
             }
         });
     }
@@ -57,4 +71,94 @@ public class MainActivity extends Activity {
         }
         return super.onOptionsItemSelected(item);
     }
+
+    public class CallAddictiveAdsRestApi extends AsyncTask<String, Void, String> {
+
+        private final String LOG_TAG = CallAddictiveAdsRestApi.class.getSimpleName();
+
+        @Override
+        protected String doInBackground(String... params) {
+
+            if (params.length == 0) {
+                return null;
+            }
+
+            HttpURLConnection urlConnection = null;
+            BufferedReader reader = null;
+            String serverResponseJsonString = null;
+
+            try {
+                // Construct the URL for addictiveadsnetwork.com
+                // Uri builtUri = Uri.parse(params[0]).buildUpon().build();
+                Uri builtUri = Uri.parse(params[0]).buildUpon().build();
+
+                URL url = new URL(builtUri.toString());
+
+                Log.v(LOG_TAG, "Built URI " + builtUri.toString());
+
+                // Open the connection and Send the Http GET request
+                urlConnection = (HttpURLConnection) url.openConnection();
+                urlConnection.setRequestMethod("GET");
+                urlConnection.connect();
+
+                // Read the input stream into a String
+                InputStream inputStream = urlConnection.getInputStream();
+                StringBuffer buffer = new StringBuffer();
+
+                if (inputStream == null) {
+                    // Nothing to do.
+                    return null;
+                }
+                reader = new BufferedReader(new InputStreamReader(inputStream));
+
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    // Adding a newline does make debugging a *lot* easier
+                    buffer.append(line + "\n");
+                }
+
+                if (buffer.length() == 0) {
+                    // Stream is empty. No point in parsing.
+                    return null;
+                }
+                serverResponseJsonString = buffer.toString();
+
+                Log.v(LOG_TAG, "Server response: " + serverResponseJsonString);
+            } catch (IOException e) {
+                Log.e(LOG_TAG, "Error ", e);
+                // If we didn't successfully get server response, there's
+                // no point in attempting to parse it.
+                return null;
+            } finally {
+                if (urlConnection != null) {
+                    urlConnection.disconnect();
+                }
+                if (reader != null) {
+                    try {
+                        reader.close();
+                    } catch (final IOException e) {
+                        Log.e(LOG_TAG, "Error closing stream", e);
+                    }
+                }
+            }
+
+            if (serverResponseJsonString.length() > 0) {
+                return "Got server respone. JSON data needs to be processed!!";
+            }
+
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(String result) {
+            super.onPostExecute(result);
+            Log.v(LOG_TAG, "Server response Message: " + result);
+            if (result != null) {
+                // Got the server response
+                mServerResponse.setText(result.toString());
+            }
+
+        }
+    }
+
 }

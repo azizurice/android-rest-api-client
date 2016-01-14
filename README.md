@@ -1,3 +1,3 @@
 # android-rest-api-client
 
-A simple android app which consumes a RESTful web service
+A simple android app which consumes a RESTful web service.
