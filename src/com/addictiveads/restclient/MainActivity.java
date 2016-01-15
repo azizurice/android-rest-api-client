@@ -42,12 +42,11 @@ public class MainActivity extends Activity {
 
             @Override
             public void onClick(View v) {
-                String name = mYourName.getText().toString();
-                mServerResponse.setText(name);
-                String urlString = BASE_URL + name;
-
-                // Call the class which has implemented AsyncTask with URL
-                // to access Web Service by Background thread
+                String inputName = mYourName.getText().toString();
+                // mServerResponse.setText(name);
+                String urlString = BASE_URL + inputName;
+                // Send the urlString as input parameter for the
+                // doInBackGround() method in CallAddictiveAdsRestApi class
                 new CallAddictiveAdsRestApi().execute(urlString);
 
             }
@@ -79,9 +78,42 @@ public class MainActivity extends Activity {
         private final String LOG_TAG = CallAddictiveAdsRestApi.class
                 .getSimpleName();
 
+        private String getMessageFromJsonString(String serverResponseJsonString)
+                throws JSONException {
+
+            // Server response:
+            // {"success":false,"error":{"code":400,"message":"No session token, try to login first","data":{}}}
+            // {"success":true,"data":{"message":"hello Azizur, from GET"}}
+            // Based on the responses, following JSON objects need to be
+            // extracted.
+
+            final String SR_SUCCESS = "success";
+            final String SR_DATA = "data";
+            final String SR_MESSAGE = "message";
+            final String SR_ERROR = "error";
+            final String SR_CODE = "code";
+
+            JSONObject serverResponseJson = new JSONObject(
+                    serverResponseJsonString);
+            boolean errorFree = serverResponseJson.getBoolean(SR_SUCCESS);
+
+            if (errorFree) {
+                JSONObject jsonData = serverResponseJson.getJSONObject(SR_DATA);
+                String message = jsonData.getString(SR_MESSAGE);
+                return message;
+            } else {
+
+                JSONObject jsonError = serverResponseJson
+                        .getJSONObject(SR_ERROR);
+                String code = jsonError.getString(SR_CODE);
+                String message = jsonError.getString(SR_MESSAGE);
+                return code + "-" + message;
+            }
+
+        }
+
         @Override
         protected String doInBackground(String... params) {
-
             if (params.length == 0) {
                 return null;
             }
@@ -92,43 +124,49 @@ public class MainActivity extends Activity {
 
             try {
                 // Construct the URL for addictiveadsnetwork.com
-                // Uri builtUri = Uri.parse(params[0]).buildUpon().build();
                 Uri builtUri = Uri.parse(params[0]).buildUpon().build();
-
                 URL url = new URL(builtUri.toString());
 
-                Log.v(LOG_TAG, "Built URI " + builtUri.toString());
+                // Log.v(LOG_TAG, "Built URI " + builtUri.toString());
 
                 // Open the connection and Send the Http GET request
+
                 urlConnection = (HttpURLConnection) url.openConnection();
                 urlConnection.setRequestMethod("GET");
                 urlConnection.connect();
 
                 // Read the input stream into a String
-                InputStream inputStream = urlConnection.getInputStream();
+
+                int statusCode = urlConnection.getResponseCode();
+                InputStream inputStream = null;
                 StringBuffer buffer = new StringBuffer();
+
+                if (statusCode >= HttpURLConnection.HTTP_BAD_REQUEST) {
+                    inputStream = urlConnection.getErrorStream();
+                } else {
+                    inputStream = urlConnection.getInputStream();
+                }
 
                 if (inputStream == null) {
                     // Nothing to do.
                     return null;
                 }
                 reader = new BufferedReader(new InputStreamReader(inputStream));
-
                 String line;
                 while ((line = reader.readLine()) != null) {
-                    // Adding a newline does make debugging a *lot* easier
+                    // Adding a newline does make debugging easier
                     buffer.append(line + "\n");
                 }
-
                 if (buffer.length() == 0) {
                     // Stream is empty. No point in parsing.
                     return null;
                 }
+
                 serverResponseJsonString = buffer.toString();
 
                 Log.v(LOG_TAG, "Server response: " + serverResponseJsonString);
             } catch (IOException e) {
-                Log.e(LOG_TAG, "Error ", e);
+                Log.e(LOG_TAG, "Exception Error ", e);
                 // If we didn't successfully get server response, there's
                 // no point in attempting to parse it.
                 return null;
@@ -145,9 +183,8 @@ public class MainActivity extends Activity {
                 }
             }
 
-            // if (serverResponseJsonString.length() > 0) {
-            // return "Got server response. JSON data needs to be processed!!";
-            // }
+            // Return message after extracting from JSON or show exception
+
             try {
                 return getMessageFromJsonString(serverResponseJsonString);
             } catch (JSONException e) {
@@ -161,35 +198,10 @@ public class MainActivity extends Activity {
         @Override
         protected void onPostExecute(String result) {
             super.onPostExecute(result);
-            Log.v(LOG_TAG, "Server response Message: " + result);
+            // Log.v(LOG_TAG, "Server response Message: " + result);
             if (result != null) {
                 // Got the required message
                 mServerResponse.setText(result.toString());
-            }
-
-        }
-
-        private String getMessageFromJsonString(String serverResponseJsonString)
-                throws JSONException {
-
-            // Server response:
-            // {"success":true,"data":{"message":"hello Azizur, from GET"}}
-            // Following JSON objects need to be extracted.
-
-            final String SR_SUCCESS = "success";
-            final String SR_DATA = "data";
-            final String SR_MESSAGE = "message";
-
-            JSONObject serverResponseJson = new JSONObject(
-                    serverResponseJsonString);
-            boolean success = serverResponseJson.getBoolean(SR_SUCCESS);
-            JSONObject jsonData = serverResponseJson.getJSONObject(SR_DATA);
-            String message = jsonData.getString(SR_MESSAGE);
-
-            if (success) {
-                return message;
-            } else {
-                return null;
             }
 
         }

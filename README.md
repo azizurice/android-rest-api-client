@@ -4,13 +4,13 @@ A simple android app which consumes a RESTful web service.
 
 ** ScreenShot of the Result:
 
-[Click here to See the result](/docs/images/android-result.png)
+Click here to See [Success Message](/docs/images/android-result.png) and [Error Message](/docs/images/android-error.png)
 
 
 In this project, I didn't use any 3rd part library for consuming restful web service like RETROFIT, nor did I use any build tools like Maven or Gradle here. There are many 3rd party libraries which make our life easy with little bit effort at the beginning. 
 But raw solution always good for understanding.
  
-## How will you run in eclipse IDE:
+## How will you run this project in eclipse IDE:
 
 1. Clone the project:
 
@@ -35,7 +35,7 @@ But raw solution always good for understanding.
 
 6. Project clean and run as 'Android Application'
 
-~~~
+#### Helpline
 Hope you will successfully run the project and see the result. In case if you face any difficultly to run
 the project in Eclipse IDE, feel free to contact me at azizur.ice@gmail.com. Any feedback would be greatly appreciated.
 
